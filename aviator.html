@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✈️ Aviator - Joguinhos</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a, #2d4a2d, #1a3a1a);
+            color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+            overflow-x: hidden;
+        }
+        .title { color: #90EE90; font-size: 2.5em; margin: 20px 0; text-shadow: 2px 2px 4px #000; }
+        
+        .game-container { 
+            background: linear-gradient(135deg, rgba(0,0,0,0.8), rgba(45,74,45,0.3));
+            border: 3px solid #606060; border-radius: 20px; padding: 30px;
+            box-shadow: 0 0 30px rgba(128,128,128, 0.3); margin: 20px;
+            width: 90%; max-width: 800px;
+        }
+        
+        .sky { 
+            background: linear-gradient(180deg, #2a2a2a 0%, #404040 50%, #2a2a2a 100%);
+            height: 400px; border-radius: 15px; position: relative;
+            overflow: hidden; margin-bottom: 20px; border: 2px solid #606060;
+        }
+        
+        .clouds { 
+            position: absolute; width: 100%; height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><circle cx="20" cy="10" r="8" fill="white" opacity="0.7"/><circle cx="30" cy="8" r="6" fill="white" opacity="0.7"/><circle cx="70" cy="12" r="7" fill="white" opacity="0.7"/></svg>') repeat-x;
+            animation: nuvens 20s linear infinite;
+        }
+        
+        .aviao { 
+            position: absolute; font-size: 3em; 
+            bottom: 50px; left: 50px; transition: all 0.1s;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+        }
+        
+        .multiplicador { 
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            font-size: 4em; font-weight: bold; color: #90EE90;
+            text-shadow: 2px 2px 4px #000; z-index: 10;
+        }
+        
+        .grafico { 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+        }
+        
+        .linha-voo { 
+            stroke: #90EE90; stroke-width: 3; fill: none;
+            filter: drop-shadow(0 0 5px #90EE90);
+        }
+        
+        .controles { 
+            display: flex; gap: 20px; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px;
+            border: 2px solid #606060; margin-bottom: 20px;
+        }
+        
+        .saldo { 
+            font-size: 1.3em; color: #90EE90; padding: 10px 20px;
+            background: rgba(45,74,45,0.3); border-radius: 5px; border: 1px solid #606060;
+        }
+        
+        .aposta-grupo { 
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        
+        .aposta-grupo input { 
+            padding: 10px; border-radius: 5px; border: 1px solid #606060;
+            background: rgba(45,74,45,0.3); color: #90EE90; text-align: center; width: 100px;
+        }
+        
+        .btn-apostar { 
+            background: linear-gradient(45deg, #90EE90, #228B22);
+            color: #000; border: 2px solid #000; padding: 15px 30px;
+            font-size: 1.2em; font-weight: bold; border-radius: 10px;
+            cursor: pointer; transition: all 0.3s;
+        }
+        .btn-apostar:hover { transform: scale(1.05); }
+        .btn-apostar:disabled { background: #666; cursor: not-allowed; }
+        
+        .btn-retirar { 
+            background: linear-gradient(45deg, #808080, #606060);
+            color: #FFF; border: 2px solid #000; padding: 15px 30px;
+            font-size: 1.2em; font-weight: bold; border-radius: 10px;
+            cursor: pointer; transition: all 0.3s; display: none;
+        }
+        .btn-retirar:hover { transform: scale(1.05); }
+        
+        .historico-voos { 
+            background: rgba(0,0,0,0.8); border: 2px solid #606060; border-radius: 10px;
+            padding: 15px; max-height: 150px; overflow-y: auto;
+        }
+        
+        .voo-item { 
+            display: inline-block; margin: 2px; padding: 5px 10px;
+            border-radius: 15px; font-weight: bold; min-width: 60px;
+            text-align: center; font-size: 0.9em;
+        }
+        .voo-baixo { background: #606060; color: #FFF; }
+        .voo-medio { background: #808080; color: #000; }
+        .voo-alto { background: #90EE90; color: #000; }
+        
+        .resultado { 
+            font-size: 1.3em; color: #90EE90; text-align: center;
+            margin: 15px 0; min-height: 30px; background: rgba(0,0,0,0.8);
+            padding: 10px; border-radius: 5px; border: 1px solid #606060;
+        }
+        
+        .botoes-extra { 
+            display: flex; gap: 10px; justify-content: center; margin-top: 15px;
+        }
+        .btn-extra { 
+            padding: 8px 15px; border: 1px solid #606060; border-radius: 5px;
+            cursor: pointer; font-size: 0.9em; transition: all 0.3s;
+            background: rgba(45,74,45,0.3); color: #90EE90;
+        }
+        
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #90EE90, #228B22);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 1000;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(144,238,144,0.3);
+        }
+        
+        .back-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(144,238,144,0.5);
+        }
+        
+        @keyframes nuvens { 0% { transform: translateX(0); } 100% { transform: translateX(-100px); } }
+        @keyframes explosao { 
+            0% { transform: scale(1); }
+            50% { transform: scale(1.5); filter: brightness(2); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        .explodindo { animation: explosao 0.5s ease-out; }
+    </style>
+</head>
+<body>
+    <div class="back-button" onclick="window.location.href='index.html'">
+        ← Voltar
+    </div>
+    <h1 class="title">✈️ AVIATOR - JOGUINHOS ✈️</h1>
+    
+    <div class="game-container">
+        <div class="sky" id="sky">
+            <div class="clouds"></div>
+            <div class="multiplicador" id="multiplicador">1.00x</div>
+            <div class="aviao" id="aviao">✈️</div>
+            <svg class="grafico" id="grafico">
+                <path class="linha-voo" id="linhaVoo" d="M 0 400"></path>
+            </svg>
+        </div>
+        
+        <div class="controles">
+            <div class="saldo" id="saldo">💰 SALDO: R$100</div>
+            
+            <div class="aposta-grupo">
+                <label>💰 Aposta:</label>
+                <input type="number" id="valorAposta" value="10" min="1">
+            </div>
+            
+            <div class="aposta-grupo">
+                <label>🎯 Retirar em:</label>
+                <input type="number" id="multiplicadorAlvo" value="2.00" min="1.01" step="0.01">
+            </div>
+            
+            <button class="btn-apostar" id="btnApostar" onclick="fazerAposta()">
+                🚀 APOSTAR
+            </button>
+            
+            <button class="btn-retirar" id="btnRetirar" onclick="retirarAposta()">
+                💰 RETIRAR
+            </button>
+        </div>
+        
+        <div class="resultado" id="resultado">✈️ Faça sua aposta e voe alto! ✈️</div>
+        
+        <div class="historico-voos" id="historicoVoos">
+            <h4 style="color: #FFD700; margin-bottom: 10px;">📊 Últimos Voos:</h4>
+        </div>
+        
+        <div class="botoes-extra">
+            <button class="btn-extra" onclick="mostrarStats()">📊 Estatísticas</button>
+            <button class="btn-extra" onclick="mostrarHistorico()">📜 Histórico</button>
+            <button class="btn-extra" onclick="resetSaldo()">💰 Reset</button>
+        </div>
+    </div>
+
+    <script>
+        let saldo = 100;
+        let voando = false;
+        let apostou = false;
+        let valorAposta = 0;
+        let multiplicadorAtual = 1.00;
+        let multiplicadorAlvo = 2.00;
+        let historico = [];
+        let vitorias = 0;
+        let derrotas = 0;
+        let maiorGanho = 0;
+        let historicoVoos = [];
+        
+        function fazerAposta() {
+            if (voando || apostou) return;
+            
+            const aposta = parseInt(document.getElementById('valorAposta').value);
+            const alvo = parseFloat(document.getElementById('multiplicadorAlvo').value);
+            
+            if (!aposta || aposta <= 0 || aposta > saldo) {
+                alert('❌ Valor de aposta inválido!');
+                return;
+            }
+            
+            if (alvo < 1.01) {
+                alert('❌ Multiplicador deve ser maior que 1.01x!');
+                return;
+            }
+            
+            valorAposta = aposta;
+            multiplicadorAlvo = alvo;
+            apostou = true;
+            
+            document.getElementById('btnApostar').style.display = 'none';
+            document.getElementById('btnRetirar').style.display = 'block';
+            document.getElementById('resultado').textContent = `🚀 Aposta: R$${aposta} | Alvo: ${alvo}x`;
+            
+            setTimeout(iniciarVoo, 2000);
+        }
+        
+        function retirarAposta() {
+            if (!apostou || !voando) return;
+            
+            const ganho = Math.floor(valorAposta * multiplicadorAtual);
+            saldo += ganho;
+            vitorias++;
+            if (ganho > maiorGanho) maiorGanho = ganho;
+            
+            historico.push({
+                aposta: valorAposta,
+                multiplicador: multiplicadorAtual,
+                ganhou: true,
+                ganho: ganho - valorAposta
+            });
+            
+            document.getElementById('resultado').textContent = `🎉 RETIROU! Ganhou R$${ganho} (${multiplicadorAtual.toFixed(2)}x)`;
+            finalizarVoo(false);
+            atualizarSaldo();
+        }
+        
+        function iniciarVoo() {
+            if (!apostou) return;
+            
+            voando = true;
+            multiplicadorAtual = 1.00;
+            
+            const aviao = document.getElementById('aviao');
+            const multiplicadorEl = document.getElementById('multiplicador');
+            const linhaVoo = document.getElementById('linhaVoo');
+            
+            // Reset posição
+            aviao.style.bottom = '50px';
+            aviao.style.left = '50px';
+            linhaVoo.setAttribute('d', 'M 50 350');
+            
+            // Determinar quando o avião vai explodir
+            const multiplicadorExplosao = Math.random() < 0.3 ? 
+                Math.random() * 1.5 + 1.01 : // 30% chance de explodir cedo (1.01x - 2.5x)
+                Math.random() * 8 + 2; // 70% chance de ir mais alto (2x - 10x)
+            
+            let tempo = 0;
+            const intervalo = setInterval(() => {
+                tempo += 0.05;
+                multiplicadorAtual = 1 + (tempo * tempo * 0.1);
+                
+                // Atualizar posição do avião
+                const x = 50 + (tempo * 30);
+                const y = 350 - (tempo * tempo * 5);
+                
+                aviao.style.left = x + 'px';
+                aviao.style.bottom = (400 - y) + 'px';
+                
+                // Atualizar linha do gráfico
+                const path = linhaVoo.getAttribute('d') + ` L ${x} ${y}`;
+                linhaVoo.setAttribute('d', path);
+                
+                // Atualizar multiplicador
+                multiplicadorEl.textContent = multiplicadorAtual.toFixed(2) + 'x';
+                
+                // Verificar se deve retirar automaticamente
+                if (multiplicadorAtual >= multiplicadorAlvo) {
+                    clearInterval(intervalo);
+                    retirarAposta();
+                    return;
+                }
+                
+                // Verificar se deve explodir
+                if (multiplicadorAtual >= multiplicadorExplosao) {
+                    clearInterval(intervalo);
+                    explodirAviao();
+                    return;
+                }
+                
+                // Avião saiu da tela
+                if (x > 800) {
+                    clearInterval(intervalo);
+                    retirarAposta();
+                    return;
+                }
+            }, 50);
+        }
+        
+        function explodirAviao() {
+            const aviao = document.getElementById('aviao');
+            aviao.textContent = '💥';
+            aviao.classList.add('explodindo');
+            
+            if (apostou) {
+                saldo -= valorAposta;
+                derrotas++;
+                
+                historico.push({
+                    aposta: valorAposta,
+                    multiplicador: multiplicadorAtual,
+                    ganhou: false,
+                    ganho: -valorAposta
+                });
+                
+                document.getElementById('resultado').textContent = `💥 EXPLODIU em ${multiplicadorAtual.toFixed(2)}x! Perdeu R$${valorAposta}`;
+            }
+            
+            // Adicionar ao histórico de voos
+            historicoVoos.unshift(multiplicadorAtual.toFixed(2));
+            if (historicoVoos.length > 20) historicoVoos.pop();
+            atualizarHistoricoVoos();
+            
+            setTimeout(() => {
+                aviao.textContent = '✈️';
+                aviao.classList.remove('explodindo');
+                finalizarVoo(true);
+            }, 1000);
+            
+            atualizarSaldo();
+        }
+        
+        function finalizarVoo(explodiu) {
+            voando = false;
+            apostou = false;
+            
+            document.getElementById('btnApostar').style.display = 'block';
+            document.getElementById('btnRetirar').style.display = 'none';
+            document.getElementById('multiplicador').textContent = '1.00x';
+            
+            // Reset gráfico
+            document.getElementById('linhaVoo').setAttribute('d', 'M 0 400');
+            
+            if (!explodiu) {
+                historicoVoos.unshift(multiplicadorAtual.toFixed(2));
+                if (historicoVoos.length > 20) historicoVoos.pop();
+                atualizarHistoricoVoos();
+            }
+            
+            if (saldo <= 0) {
+                setTimeout(() => {
+                    alert('✈️ GAME OVER\n💔 Seu saldo acabou!');
+                    location.reload();
+                }, 2000);
+            }
+        }
+        
+        function atualizarHistoricoVoos() {
+            const container = document.getElementById('historicoVoos');
+            const voos = container.querySelector('h4').nextSibling;
+            if (voos) voos.remove();
+            
+            const div = document.createElement('div');
+            historicoVoos.forEach(mult => {
+                const span = document.createElement('span');
+                span.className = 'voo-item';
+                span.textContent = mult + 'x';
+                
+                const valor = parseFloat(mult);
+                if (valor < 2) span.className += ' voo-baixo';
+                else if (valor < 5) span.className += ' voo-medio';
+                else span.className += ' voo-alto';
+                
+                div.appendChild(span);
+            });
+            container.appendChild(div);
+        }
+        
+        function atualizarSaldo() {
+            const saldoEl = document.getElementById('saldo');
+            saldoEl.textContent = `💰 SALDO: R$${saldo}`;
+            saldoEl.style.color = saldo > 0 ? '#FFD700' : '#FF4444';
+        }
+        
+        function mostrarStats() {
+            if (historico.length === 0) {
+                alert('📊 Estatísticas\n✈️ Nenhum voo realizado ainda!');
+                return;
+            }
+            
+            const totalVoos = historico.length;
+            const taxaVitoria = (vitorias / totalVoos * 100).toFixed(1);
+            const lucroTotal = historico.reduce((acc, h) => acc + h.ganho, 0);
+            
+            alert(`📊 ESTATÍSTICAS DO AVIATOR 📊\n\n✈️ Total de Voos: ${totalVoos}\n🎉 Retiradas: ${vitorias}\n💥 Explosões: ${derrotas}\n📈 Taxa de Sucesso: ${taxaVitoria}%\n💰 Lucro/Prejuízo Total: R$${lucroTotal}\n🎯 Maior Ganho: R$${maiorGanho}\n💳 Saldo Atual: R$${saldo}`);
+        }
+        
+        function mostrarHistorico() {
+            if (historico.length === 0) {
+                alert('📜 Histórico\n✈️ Nenhum voo realizado ainda!');
+                return;
+            }
+            
+            const ultimos = historico.slice(-10).reverse();
+            let texto = '📜 ÚLTIMOS 10 VOOS 📜\n\n';
+            
+            ultimos.forEach((voo, i) => {
+                const resultado = voo.ganhou ? '🎉' : '💥';
+                texto += `${i + 1}. ${resultado} ${voo.multiplicador.toFixed(2)}x - R$${voo.ganho > 0 ? '+' : ''}${voo.ganho}\n`;
+            });
+            
+            alert(texto);
+        }
+        
+        function resetSaldo() {
+            if (confirm('💰 Reset Saldo\n🔄 Deseja resetar seu saldo para R$100?\n⚠️ Isso apagará seu histórico!')) {
+                saldo = 100;
+                historico = [];
+                vitorias = 0;
+                derrotas = 0;
+                maiorGanho = 0;
+                historicoVoos = [];
+                atualizarSaldo();
+                atualizarHistoricoVoos();
+                document.getElementById('resultado').textContent = '✈️ Saldo resetado! Voe alto! ✈️';
+                alert('✅ Sucesso\n💰 Saldo resetado com sucesso!');
+            }
+        }
+        
+        // Inicializar histórico de voos
+        atualizarHistoricoVoos();
+    </script>
+</body>
+</html>

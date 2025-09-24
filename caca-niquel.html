@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎰 Caça-Níquel - Joguinhos</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a, #2d4a2d, #1a3a1a);
+            color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+        }
+        .title { color: #90EE90; font-size: 2.5em; margin: 20px 0; text-shadow: 2px 2px 4px #000; }
+        
+        .maquina { 
+            background: linear-gradient(135deg, #404040, #606060);
+            border: 5px solid #000; border-radius: 20px; padding: 30px;
+            box-shadow: 0 0 30px rgba(128, 128, 128, 0.5);
+            margin: 20px 0;
+        }
+        
+        .tela { 
+            background: #000; border: 3px solid #606060; border-radius: 10px;
+            padding: 20px; margin-bottom: 20px;
+        }
+        
+        .rolos { 
+            display: flex; gap: 10px; justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .rolo { 
+            width: 120px; height: 150px; background: rgba(45,74,45,0.3);
+            border: 3px solid #606060; border-radius: 10px;
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; position: relative; overflow: hidden;
+        }
+        
+        .simbolo { 
+            font-size: 3em; position: absolute;
+            width: 100%; text-align: center;
+            line-height: 50px; height: 50px;
+        }
+        
+        .linha-pagamento { 
+            position: absolute; width: 100%; height: 3px;
+            background: #90EE90; top: 50%; transform: translateY(-50%);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .linha-ativa { opacity: 1; }
+        
+        .controles { 
+            background: linear-gradient(135deg, rgba(0,0,0,0.8), rgba(45,74,45,0.3));
+            padding: 20px; border-radius: 15px; border: 2px solid #606060;
+            box-shadow: 0 0 20px rgba(128, 128, 128, 0.2);
+        }
+        
+        .saldo { 
+            font-size: 1.5em; color: #90EE90; text-align: center; 
+            margin-bottom: 15px; background: rgba(0,0,0,0.8); padding: 10px;
+            border-radius: 5px; border: 1px solid #606060;
+        }
+        
+        .aposta-controles { 
+            display: flex; gap: 15px; align-items: center; 
+            justify-content: center; margin: 15px 0;
+        }
+        
+        .aposta-controles input { 
+            padding: 8px; border-radius: 5px; border: 1px solid #606060;
+            background: rgba(45,74,45,0.3); color: #90EE90; text-align: center; width: 80px;
+        }
+        
+        .btn-spin { 
+            background: linear-gradient(45deg, #90EE90, #228B22);
+            color: #000; border: 3px solid #000; padding: 15px 40px;
+            font-size: 1.5em; font-weight: bold; border-radius: 50%;
+            cursor: pointer; transition: all 0.3s; margin: 20px;
+            box-shadow: 0 4px 15px rgba(144, 238, 144, 0.3);
+            width: 120px; height: 120px; display: flex;
+            align-items: center; justify-content: center;
+        }
+        .btn-spin:hover { transform: scale(1.1); }
+        .btn-spin:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .resultado { 
+            font-size: 1.3em; color: #90EE90; text-align: center;
+            margin: 15px 0; min-height: 30px; background: rgba(0,0,0,0.8);
+            padding: 10px; border-radius: 5px; border: 1px solid #606060;
+        }
+        
+        .tabela-pagamentos { 
+            background: rgba(0,0,0,0.8); border: 2px solid #606060; border-radius: 10px;
+            padding: 15px; margin: 20px 0; max-width: 400px;
+        }
+        
+        .pagamento { 
+            display: flex; justify-content: space-between; 
+            margin: 5px 0; font-size: 0.9em;
+        }
+        
+        .botoes-extra { 
+            display: flex; gap: 10px; justify-content: center; margin-top: 15px;
+        }
+        .btn-extra { 
+            padding: 8px 15px; border: 1px solid #606060; border-radius: 5px;
+            cursor: pointer; font-size: 0.9em; transition: all 0.3s;
+        }
+        .btn-stats { background: rgba(45,74,45,0.3); color: #90EE90; }
+        .btn-historico { background: rgba(0,0,0,0.8); color: #90EE90; }
+        .btn-reset { background: #90EE90; color: #000; }
+        
+        .confete { 
+            position: fixed; width: 10px; height: 10px; border-radius: 50%;
+            pointer-events: none; z-index: 1000;
+        }
+        
+        .rolo-girando {
+            background: linear-gradient(0deg, #0d2818 0%, #1a4d2e 50%, #0d2818 100%);
+            background-size: 100% 200%;
+            animation: roloGiro 0.1s linear infinite;
+        }
+        
+        @keyframes roloGiro {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 0% 100%; }
+        }
+        
+        @keyframes piscar { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .piscando { animation: piscar 0.3s infinite; }
+        
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #90EE90, #228B22);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 1000;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(144,238,144,0.3);
+        }
+        
+        .back-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(144,238,144,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="back-button" onclick="window.location.href='index.html'">
+        ← Voltar
+    </div>
+    <h1 class="title">🎰 CAÇA-NÍQUEL - JOGUINHOS 🎰</h1>
+    
+    <div class="maquina">
+        <div class="tela">
+            <div class="rolos">
+                <div class="rolo" id="rolo1">
+                    <div class="linha-pagamento"></div>
+                </div>
+                <div class="rolo" id="rolo2">
+                    <div class="linha-pagamento"></div>
+                </div>
+                <div class="rolo" id="rolo3">
+                    <div class="linha-pagamento"></div>
+                </div>
+            </div>
+            
+            <div class="resultado" id="resultado">🎰 Puxe a alavanca para começar! 🎰</div>
+        </div>
+        
+        <div class="controles">
+            <div class="saldo" id="saldo">💰 CRÉDITOS: R$100</div>
+            
+            <div class="aposta-controles">
+                <label>💰 Aposta:</label>
+                <input type="number" id="valorAposta" value="5" min="1" max="50">
+                <button class="btn-spin" id="btnSpin" onclick="girarRolos()">
+                    🎰<br>SPIN
+                </button>
+            </div>
+            
+            <div class="botoes-extra">
+                <button class="btn-extra btn-stats" onclick="mostrarStats()">📊 Stats</button>
+                <button class="btn-extra btn-historico" onclick="mostrarHistorico()">📜 Histórico</button>
+                <button class="btn-extra btn-reset" onclick="resetSaldo()">💰 Reset</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tabela-pagamentos">
+        <h3 style="text-align: center; color: #90EE90; margin-bottom: 10px;">💎 TABELA DE PAGAMENTOS 💎</h3>
+        <div class="pagamento"><span>🍒🍒🍒</span><span>100x</span></div>
+        <div class="pagamento"><span>🍋🍋🍋</span><span>50x</span></div>
+        <div class="pagamento"><span>🍊🍊🍊</span><span>25x</span></div>
+        <div class="pagamento"><span>🍇🍇🍇</span><span>15x</span></div>
+        <div class="pagamento"><span>🔔🔔🔔</span><span>10x</span></div>
+        <div class="pagamento"><span>⭐⭐⭐</span><span>5x</span></div>
+        <div class="pagamento"><span>💎💎💎</span><span>200x JACKPOT!</span></div>
+        <div class="pagamento"><span>🍒🍒 (qualquer)</span><span>2x</span></div>
+    </div>
+
+    <script>
+        let saldo = 100;
+        let animando = false;
+        let historico = [];
+        let vitorias = 0;
+        let derrotas = 0;
+        let maiorGanho = 0;
+        
+        const simbolos = ['🍒', '🍋', '🍊', '🍇', '🔔', '⭐', '💎'];
+        const pagamentos = {
+            '🍒🍒🍒': 100,
+            '🍋🍋🍋': 50,
+            '🍊🍊🍊': 25,
+            '🍇🍇🍇': 15,
+            '🔔🔔🔔': 10,
+            '⭐⭐⭐': 5,
+            '💎💎💎': 200,
+            '🍒🍒': 2
+        };
+        
+        function criarSimbolos() {
+            for (let i = 1; i <= 3; i++) {
+                const rolo = document.getElementById(`rolo${i}`);
+                rolo.innerHTML = '<div class="linha-pagamento"></div>';
+                
+                // Criar 3 símbolos visíveis (superior, central, inferior)
+                for (let j = 0; j < 3; j++) {
+                    const simbolo = document.createElement('div');
+                    simbolo.className = 'simbolo';
+                    simbolo.textContent = simbolos[Math.floor(Math.random() * simbolos.length)];
+                    simbolo.style.top = (j * 50) + 'px';
+                    simbolo.style.left = '50%';
+                    simbolo.style.transform = 'translateX(-50%)';
+                    rolo.appendChild(simbolo);
+                }
+            }
+        }
+        
+        function girarRolos() {
+            if (animando) return;
+            
+            const aposta = parseInt(document.getElementById('valorAposta').value);
+            if (!aposta || aposta <= 0 || aposta > saldo) {
+                alert('❌ Valor de aposta inválido!');
+                return;
+            }
+            
+            animando = true;
+            document.getElementById('btnSpin').disabled = true;
+            document.getElementById('resultado').textContent = '🎰 Girando os rolos... 🎰';
+            
+            // Animar rolos
+            const rolos = [1, 2, 3];
+            const resultados = [];
+            
+            rolos.forEach((num, index) => {
+                const rolo = document.getElementById(`rolo${num}`);
+                const simbolosRolo = rolo.querySelectorAll('.simbolo');
+                
+                // Criar efeito de giro com múltiplos símbolos
+                let contador = 0;
+                const intervaloGiro = setInterval(() => {
+                    simbolosRolo.forEach(simbolo => {
+                        simbolo.textContent = simbolos[Math.floor(Math.random() * simbolos.length)];
+                    });
+                    contador++;
+                    
+                    if (contador > 20 + (index * 10)) {
+                        clearInterval(intervaloGiro);
+                        
+                        // Escolher símbolo final e posicionar corretamente
+                        const simboloFinal = simbolos[Math.floor(Math.random() * simbolos.length)];
+                        resultados.push(simboloFinal);
+                        
+                        // Atualizar apenas o símbolo central (linha de pagamento)
+                        const simboloCentral = simbolosRolo[1]; // Símbolo do meio
+                        simboloCentral.textContent = simboloFinal;
+                        simboloCentral.style.fontSize = '3em';
+                        simboloCentral.style.top = '50px';
+                        simboloCentral.style.transform = 'translateX(-50%)';
+                        
+                        // Atualizar símbolos adjacentes
+                        simbolosRolo[0].textContent = simbolos[Math.floor(Math.random() * simbolos.length)];
+                        simbolosRolo[2].textContent = simbolos[Math.floor(Math.random() * simbolos.length)];
+                        
+                        // Se é o último rolo, processar resultado
+                        if (index === 2) {
+                            setTimeout(() => processarResultado(resultados, aposta), 500);
+                        }
+                    }
+                }, 100);
+            });
+        }
+        
+        function processarResultado(resultados, aposta) {
+            const linha = resultados.join('');
+            let ganho = 0;
+            let ganhou = false;
+            
+            // Verificar combinações
+            if (pagamentos[linha]) {
+                ganho = aposta * pagamentos[linha];
+                ganhou = true;
+            } else if (resultados[0] === '🍒' && resultados[1] === '🍒') {
+                ganho = aposta * 2;
+                ganhou = true;
+            }
+            
+            // Atualizar estatísticas
+            historico.push({
+                simbolos: linha,
+                aposta: aposta,
+                ganhou: ganhou,
+                ganho: ganhou ? ganho : -aposta
+            });
+            
+            if (ganhou) {
+                saldo += ganho;
+                vitorias++;
+                if (ganho > maiorGanho) maiorGanho = ganho;
+                
+                // Efeitos de vitória
+                ativarLinhasPagamento();
+                criarConfetes();
+                piscarMaquina();
+                
+                if (linha === '💎💎💎') {
+                    document.getElementById('resultado').textContent = '💎 JACKPOT! MEGA PRÊMIO! 💎';
+                    setTimeout(() => alert(`🎉 JACKPOT! 🎉\n💎 INCRÍVEL! Você ganhou R$${ganho}! 💎`), 1000);
+                } else {
+                    document.getElementById('resultado').textContent = `🎉 GANHOU! +R$${ganho} 🎉`;
+                    setTimeout(() => alert(`🎉 Parabéns! 🎉\nVocê ganhou R$${ganho}!`), 1000);
+                }
+            } else {
+                saldo -= aposta;
+                derrotas++;
+                document.getElementById('resultado').textContent = `😔 Não foi dessa vez... -R$${aposta}`;
+            }
+            
+            atualizarSaldo();
+            
+            setTimeout(() => {
+                animando = false;
+                document.getElementById('btnSpin').disabled = false;
+                document.querySelector('.maquina').classList.remove('piscando');
+                document.querySelectorAll('.linha-pagamento').forEach(l => l.classList.remove('linha-ativa'));
+            }, 3000);
+            
+            if (saldo <= 0) {
+                setTimeout(() => {
+                    alert('🎮 GAME OVER\n💔 Seus créditos acabaram!');
+                    location.reload();
+                }, 3000);
+            }
+        }
+        
+        function ativarLinhasPagamento() {
+            document.querySelectorAll('.linha-pagamento').forEach(linha => {
+                linha.classList.add('linha-ativa');
+            });
+        }
+        
+        function piscarMaquina() {
+            document.querySelector('.maquina').classList.add('piscando');
+        }
+        
+        function criarConfetes() {
+            const cores = ['#FFD700', '#00FF00', '#FF0040', '#0040FF', '#FF8000', '#8000FF'];
+            for (let i = 0; i < 30; i++) {
+                const confete = document.createElement('div');
+                confete.className = 'confete';
+                confete.style.left = Math.random() * window.innerWidth + 'px';
+                confete.style.top = '-10px';
+                confete.style.background = cores[Math.floor(Math.random() * cores.length)];
+                document.body.appendChild(confete);
+                
+                let pos = -10;
+                const intervalo = setInterval(() => {
+                    pos += Math.random() * 5 + 2;
+                    confete.style.top = pos + 'px';
+                    confete.style.left = (parseInt(confete.style.left) + (Math.random() - 0.5) * 4) + 'px';
+                    
+                    if (pos > window.innerHeight) {
+                        clearInterval(intervalo);
+                        confete.remove();
+                    }
+                }, 50);
+            }
+        }
+        
+        function atualizarSaldo() {
+            const saldoEl = document.getElementById('saldo');
+            saldoEl.textContent = `💰 CRÉDITOS: R$${saldo}`;
+            saldoEl.style.color = saldo > 0 ? '#FFD700' : '#FF4444';
+        }
+        
+        function mostrarStats() {
+            if (historico.length === 0) {
+                alert('📊 Estatísticas\n🎰 Nenhum jogo realizado ainda!');
+                return;
+            }
+            
+            const totalJogos = historico.length;
+            const taxaVitoria = (vitorias / totalJogos * 100).toFixed(1);
+            const lucroTotal = historico.reduce((acc, h) => acc + h.ganho, 0);
+            
+            alert(`📊 ESTATÍSTICAS DO CAÇA-NÍQUEL 📊\n\n🎰 Total de Jogadas: ${totalJogos}\n🎉 Vitórias: ${vitorias}\n😔 Derrotas: ${derrotas}\n📈 Taxa de Vitória: ${taxaVitoria}%\n💰 Lucro/Prejuízo Total: R$${lucroTotal}\n🎯 Maior Ganho: R$${maiorGanho}\n💳 Créditos Atuais: R$${saldo}`);
+        }
+        
+        function mostrarHistorico() {
+            if (historico.length === 0) {
+                alert('📜 Histórico\n🎰 Nenhuma jogada realizada ainda!');
+                return;
+            }
+            
+            const ultimos = historico.slice(-10).reverse();
+            let texto = '📜 ÚLTIMAS 10 JOGADAS 📜\n\n';
+            
+            ultimos.forEach((jogo, i) => {
+                const resultado = jogo.ganhou ? '🎉' : '😔';
+                texto += `${i + 1}. ${resultado} ${jogo.simbolos} - R$${jogo.ganho > 0 ? '+' : ''}${jogo.ganho}\n`;
+            });
+            
+            alert(texto);
+        }
+        
+        function resetSaldo() {
+            if (confirm('💰 Reset Créditos\n🔄 Deseja resetar seus créditos para R$100?\n⚠️ Isso apagará seu histórico!')) {
+                saldo = 100;
+                historico = [];
+                vitorias = 0;
+                derrotas = 0;
+                maiorGanho = 0;
+                atualizarSaldo();
+                document.getElementById('resultado').textContent = '🎰 Créditos resetados! Boa sorte! 🎰';
+                alert('✅ Sucesso\n💰 Créditos resetados com sucesso!');
+            }
+        }
+        
+        // Inicializar
+        criarSimbolos();
+    </script>
+</body>
+</html>
